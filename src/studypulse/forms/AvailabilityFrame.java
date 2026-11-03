@@ -1,0 +1,291 @@
+package studypulse.forms;
+
+import java.awt.Color;
+import javax.swing.JOptionPane;
+import javax.swing.table.DefaultTableModel;
+
+/**
+ * Free study hours per weekday and the weekly rest day.
+ * Opened from StudyPlanFrame / SettingsFrame ("My Free Time"); closing it does not close the app.
+ */
+public class AvailabilityFrame extends javax.swing.JFrame {
+
+    private static final int COL_DAY = 1;
+    private static final int COL_HOURS = 2;
+    private static final double MAX_HOURS = 12;
+    private static final String[] DAYS = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
+    private static final String REST_SUFFIX = " (rest day)";
+
+    private static final Color BACKGROUND = new Color(244, 246, 249);
+    private static final Color NAVY = new Color(34, 48, 63);
+    private static final Color ACCENT = new Color(46, 125, 154);
+
+    /** Saved values, shared by every AvailabilityFrame while the app runs. */
+    private static final double[] savedHours = {3, 3, 2.5, 3, 2, 4, 0};
+    private static int savedRestDay = 6;
+
+    private DefaultTableModel tableModel;
+    private Runnable onSaved;
+
+    /**
+     * Creates new form AvailabilityFrame
+     */
+    public AvailabilityFrame() {
+        initComponents();
+        applyColors();
+        setupTable();
+        loadData();
+        setLocationRelativeTo(null);
+    }
+
+    /** Runs after a successful save (e.g. to refresh the opener). */
+    public void setOnSaved(Runnable onSaved) {
+        this.onSaved = onSaved;
+    }
+
+    private void applyColors() {
+        getContentPane().setBackground(BACKGROUND);
+        btnSave.setBackground(ACCENT);
+        btnSave.setForeground(Color.WHITE);
+        btnSave.setFocusPainted(false);
+        btnCancel.setFocusPainted(false);
+    }
+
+    private void setupTable() {
+        tableModel = new DefaultTableModel(new Object[]{"ID", "Day", "Free hours"}, 0) {
+            @Override
+            public Class<?> getColumnClass(int column) {
+                return column == COL_HOURS ? Double.class : Object.class;
+            }
+
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return column == COL_HOURS && row != cmbRestDay.getSelectedIndex();
+            }
+        };
+        tblAvailability.setModel(tableModel);
+        tblAvailability.setRowHeight(26);
+        tblAvailability.setFillsViewportHeight(true);
+        tblAvailability.setGridColor(new Color(230, 234, 238));
+        tblAvailability.getTableHeader().setBackground(NAVY);
+        tblAvailability.getTableHeader().setForeground(Color.WHITE);
+        tblAvailability.removeColumn(tblAvailability.getColumnModel().getColumn(0));
+        tblAvailability.getColumnModel().getColumn(0).setPreferredWidth(130);
+    }
+
+    private void loadData() {
+        tableModel.setRowCount(0);
+        for (int i = 0; i < DAYS.length; i++) {
+            tableModel.addRow(new Object[]{i + 1, DAYS[i], savedHours[i]});
+        }
+        cmbRestDay.setSelectedIndex(savedRestDay);
+        updateRestDayLabels();
+    }
+
+    /** The rest day shows "(rest day)" and 0 hours. */
+    private void updateRestDayLabels() {
+        if (tableModel == null) {
+            return;
+        }
+        if (tblAvailability.isEditing()) {
+            tblAvailability.getCellEditor().stopCellEditing();
+        }
+        int rest = cmbRestDay.getSelectedIndex();
+        for (int i = 0; i < DAYS.length; i++) {
+            tableModel.setValueAt(i == rest ? DAYS[i] + REST_SUFFIX : DAYS[i], i, COL_DAY);
+            if (i == rest) {
+                tableModel.setValueAt(0.0, i, COL_HOURS);
+            }
+        }
+    }
+
+    private void save() {
+        if (tblAvailability.isEditing() && !tblAvailability.getCellEditor().stopCellEditing()) {
+            return;
+        }
+        for (int i = 0; i < DAYS.length; i++) {
+            Object value = tableModel.getValueAt(i, COL_HOURS);
+            double hours = value == null ? -1 : ((Number) value).doubleValue();
+            if (hours < 0 || hours > MAX_HOURS) {
+                JOptionPane.showMessageDialog(this, DAYS[i] + ": free hours must be between 0 and "
+                        + (int) MAX_HOURS + ".", "Free time", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+        }
+        for (int i = 0; i < DAYS.length; i++) {
+            savedHours[i] = ((Number) tableModel.getValueAt(i, COL_HOURS)).doubleValue();
+        }
+        savedRestDay = cmbRestDay.getSelectedIndex();
+        if (onSaved != null) {
+            onSaved.run();
+        }
+        dispose();
+    }
+
+    /** Total free hours per week, shown in Settings. */
+    static double weeklyHours() {
+        double total = 0;
+        for (double h : savedHours) {
+            total += h;
+        }
+        return total;
+    }
+
+    /**
+     * This method is called from within the constructor to initialize the form.
+     * WARNING: Do NOT modify this code. The content of this method is always
+     * regenerated by the Form Editor.
+     */
+    @SuppressWarnings("unchecked")
+    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
+    private void initComponents() {
+
+        lblTitle = new javax.swing.JLabel();
+        lblInfo = new javax.swing.JLabel();
+        scrAvailability = new javax.swing.JScrollPane();
+        tblAvailability = new javax.swing.JTable();
+        lblRestDay = new javax.swing.JLabel();
+        cmbRestDay = new javax.swing.JComboBox<>();
+        lblRestHint = new javax.swing.JLabel();
+        btnCancel = new javax.swing.JButton();
+        btnSave = new javax.swing.JButton();
+
+        setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
+        setTitle("StudyPulse – My Free Time");
+        setResizable(false);
+
+        lblTitle.setFont(new java.awt.Font("Segoe UI", 1, 22)); // NOI18N
+        lblTitle.setForeground(new java.awt.Color(34, 48, 63));
+        lblTitle.setText("My Free Time");
+
+        lblInfo.setForeground(new java.awt.Color(107, 119, 133));
+        lblInfo.setText("Free study hours per day (0 - 12, steps of 0.5)");
+
+        tblAvailability.setModel(new javax.swing.table.DefaultTableModel(
+            new Object [][] {
+
+            },
+            new String [] {
+                "ID", "Day", "Free hours"
+            }
+        ) {
+            Class[] types = new Class [] {
+                java.lang.Integer.class, java.lang.String.class, java.lang.Double.class
+            };
+            boolean[] canEdit = new boolean [] {
+                false, false, true
+            };
+
+            public Class getColumnClass(int columnIndex) {
+                return types [columnIndex];
+            }
+
+            public boolean isCellEditable(int rowIndex, int columnIndex) {
+                return canEdit [columnIndex];
+            }
+        });
+        scrAvailability.setViewportView(tblAvailability);
+
+        lblRestDay.setText("Weekly rest day");
+
+        cmbRestDay.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday" }));
+        cmbRestDay.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                cmbRestDayActionPerformed(evt);
+            }
+        });
+
+        lblRestHint.setFont(new java.awt.Font("Segoe UI", 0, 12)); // NOI18N
+        lblRestHint.setForeground(new java.awt.Color(107, 119, 133));
+        lblRestHint.setText("No study is planned on this day.");
+
+        btnCancel.setText("Cancel");
+        btnCancel.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnCancelActionPerformed(evt);
+            }
+        });
+
+        btnSave.setText("Save");
+        btnSave.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnSaveActionPerformed(evt);
+            }
+        });
+
+        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
+        getContentPane().setLayout(layout);
+        layout.setHorizontalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(layout.createSequentialGroup()
+                .addGap(16, 16, 16)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(lblTitle)
+                    .addComponent(lblInfo)
+                    .addComponent(scrAvailability, javax.swing.GroupLayout.DEFAULT_SIZE, 272, Short.MAX_VALUE)
+                    .addComponent(lblRestDay)
+                    .addComponent(cmbRestDay, 0, 272, Short.MAX_VALUE)
+                    .addComponent(lblRestHint)
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(btnCancel, javax.swing.GroupLayout.DEFAULT_SIZE, 132, Short.MAX_VALUE)
+                        .addGap(8, 8, 8)
+                        .addComponent(btnSave, javax.swing.GroupLayout.DEFAULT_SIZE, 132, Short.MAX_VALUE)))
+                .addGap(16, 16, 16))
+        );
+        layout.setVerticalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(layout.createSequentialGroup()
+                .addGap(16, 16, 16)
+                .addComponent(lblTitle)
+                .addGap(2, 2, 2)
+                .addComponent(lblInfo)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(scrAvailability, javax.swing.GroupLayout.DEFAULT_SIZE, 236, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(lblRestDay)
+                .addGap(4, 4, 4)
+                .addComponent(cmbRestDay, javax.swing.GroupLayout.PREFERRED_SIZE, 32, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(4, 4, 4)
+                .addComponent(lblRestHint)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(btnCancel, javax.swing.GroupLayout.PREFERRED_SIZE, 36, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(btnSave, javax.swing.GroupLayout.PREFERRED_SIZE, 36, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(16, 16, 16))
+        );
+
+        setSize(new java.awt.Dimension(320, 520));
+        setLocationRelativeTo(null);
+    }// </editor-fold>//GEN-END:initComponents
+
+
+    private void cmbRestDayActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cmbRestDayActionPerformed
+        updateRestDayLabels();
+    }//GEN-LAST:event_cmbRestDayActionPerformed
+
+    private void btnCancelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCancelActionPerformed
+        dispose();
+    }//GEN-LAST:event_btnCancelActionPerformed
+
+    private void btnSaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSaveActionPerformed
+        save();
+    }//GEN-LAST:event_btnSaveActionPerformed
+
+    // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton btnCancel;
+    private javax.swing.JButton btnSave;
+    private javax.swing.JComboBox<String> cmbRestDay;
+    private javax.swing.JLabel lblInfo;
+    private javax.swing.JLabel lblRestDay;
+    private javax.swing.JLabel lblRestHint;
+    private javax.swing.JLabel lblTitle;
+    private javax.swing.JScrollPane scrAvailability;
+    private javax.swing.JTable tblAvailability;
+    // End of variables declaration//GEN-END:variables
+
+    public static void main(String args[]) {
+        java.awt.EventQueue.invokeLater(() -> {
+            new AvailabilityFrame().setVisible(true);
+        });
+    }
+}
